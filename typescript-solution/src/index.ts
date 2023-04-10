@@ -6,7 +6,7 @@ import { Logger } from "tslog";
 
 // Use const instead of let for constants
 const log = new Logger({
-    minLevel: 0,
+    minLevel: 3,
     prettyLogTemplate: "{{dateIsoStr}} \t{{logLevelName}} \t{{filePathWithLine}}{{name}} \t"
 });
 
@@ -227,9 +227,9 @@ async function solveCrossword(input: string[]) {
     encryptedWords = flipArray(encryptedWords);
     encryptedWords = await solveRemainingShortWords(encryptedWords);
 
-    // Log the final result
-    log.debug(encryptedWords);
+    // Return the final result
+    return encryptedWords;
 }
 
 // Call the main function
-solveCrossword(input);
+solveCrossword(input).then((arr) => log.info("Crossword solved! Result:", arr.join(", ")));
