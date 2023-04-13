@@ -12,7 +12,7 @@ $client = new Client("tcp://{$_ENV["REDIS_HOST"]}:{$_ENV["REDIS_PORT"]}");
 $defaultDictionary = ["А", "В", "Г", "Е", "И", "К", "Л", "Н", "О", "П", "Р", "С", "Т", "У", "Щ", "Ь", "Я", ""];
 $defaultWords = ["1153241526", "1656335361", "5424251322", "3655516563", "4213633456"];
 
-function fetchByMask(string $mask)
+function fetchByMask(string $mask): array
 {
     global $client;
 
@@ -21,7 +21,7 @@ function fetchByMask(string $mask)
     $value = $client->get($key);
 
     if ($value) {
-        return json_decode($value, true);
+        return json_decode($value, true) ?? [];
     }
 
     // Create a URL with the mask as a parameter
@@ -39,7 +39,8 @@ function fetchByMask(string $mask)
             case 200: # OK
                 break;
             default:
-                echo "Unexpected HTTP code while requesting API: " . $http_code . "</br>";
+                return [];
+            // echo "Unexpected HTTP code while requesting API: " . $http_code . " (request url: " . $url . "</br>";
         }
     }
 
@@ -50,16 +51,15 @@ function fetchByMask(string $mask)
 
     $client->set($key, json_encode($data));
 
-    // Use null coalescing for safety
-    return $data;
+    return $data ?? [];
 }
 
-function fetchByChar($char, $length)
+function fetchByChar(string $char, int $length): array
 {
     return fetchByMask($char . str_repeat("*", $length - 1));
 }
 
-function filterWords(array $words, array $missingCharacters, array $dict)
+function filterWords(array $words, array $missingCharacters, array $dict): array
 {
     // Create a regex string from the missing characters
     $regexStr = "";
@@ -97,8 +97,6 @@ function solveWord(string $mask, array $dict): string
 
     $input = $mask;
 
-    $firstRun = preg_match("/^\d+$/", $input);
-
     $missingCharacters = mb_str_split($input);
     $firstChar = $missingCharacters[0];
 
@@ -111,6 +109,7 @@ function solveWord(string $mask, array $dict): string
             $words = array_merge($words, fetchByChar($char, mb_strlen($mask)));
             $words = filterWords($words, $missingCharacters, $dict);
 
+            // Break the loop if there are any words found (prevents useless requests)
             if (count($words) > 0) {
                 break;
             }
@@ -120,16 +119,14 @@ function solveWord(string $mask, array $dict): string
         $words = filterWords($words, $missingCharacters, $dict);
     }
 
-    // Check the number of possible words and return accordingly
-    if (count($words) > 1) {
+    // Return the mask if there are no possible words
+    if (count($words) < 1) {
         return $mask;
-    } elseif (count($words) < 1) {
-        $client->set($key, $mask);
-        return $mask;
-    } else {
-        $client->set($key, reset($words));
-        return reset($words);
     }
+
+    // Return and store the first possible word otherwise
+    $client->set($key, reset($words));
+    return reset($words);
 }
 
 function bulkSolve(array $words, array $dict)
@@ -160,7 +157,7 @@ function flipArray(array $input)
     return $output;
 }
 
-function splitString($str)
+function splitString(string $str): array
 {
     $result = [];
 
@@ -179,10 +176,10 @@ function splitString($str)
     return $result;
 }
 
-function findSolvableWord(array $input, array $dict)
+function findSolvableWord(array $input, array $dict): array
 {
-    $outputStr = null;
-    $outputIndex = null;
+    $outputStr = "";
+    $outputIndex = 0;
 
     for ($i = count($input) - 1; $i >= 0; $i--) {
         $res = solveWord($input[$i], $dict);
@@ -204,6 +201,10 @@ function solveRemainingShortWords(array $input, array $dict)
     for ($i = 0; $i < count($input); $i++) {
         $str = $input[$i];
 
+        if (mb_strlen($str) < 1) {
+            break;
+        }
+
         if (preg_match("/^[А-Я]+$/ium", $str)) {
             array_push($output, $str);
             continue;
@@ -221,10 +222,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $words = json_decode($_POST["words"]);
     $dict = json_decode($_POST["dict"]);
 
-    $words = bulkSolve($words, $dict);
-    $words = flipArray($words);
-    $words = bulkSolve($words, $dict);
-    $words = flipArray($words);
+    // Solve horizontally, rotate, solve vertically, rotate back to horizontal
+    for ($i = 0; $i < 2; $i++) {
+        $words = bulkSolve($words, $dict);
+        $words = flipArray($words);
+    }
+
     $words = solveRemainingShortWords($words, $dict);
 }
 ?>
@@ -304,6 +307,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <h1 class="display-5 fw-bold text-white">Crossword Solver</h1>
         <?php if ($_SERVER["REQUEST_METHOD"] === "POST"): ?>
             <table class="my-4" style="float:none; margin:auto;">
+            <?php if (count($words)): ?>
+                <h3>Something went wrong! Please try again later.</h3>
+            <?php endif; ?>
             <?php foreach ($words as $word): ?>
                 <tr>
                 <?php foreach (mb_str_split($word) as $char): ?>
