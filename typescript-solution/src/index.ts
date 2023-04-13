@@ -2,13 +2,6 @@
 import axios from "axios";
 import { readFile, writeFile } from "fs/promises";
 import { existsSync } from "fs";
-import { Logger } from "tslog";
-
-// Use const instead of let for constants
-const log = new Logger({
-    minLevel: 3,
-    prettyLogTemplate: "{{dateIsoStr}} \t{{logLevelName}} \t{{filePathWithLine}}{{name}} \t"
-});
 
 // Use type annotations for arrays and objects
 const input: string[] = ["1153241526", "1656335361", "5424251322", "3655516563", "4213633456"];
@@ -28,7 +21,7 @@ async function readCache(): Promise<Record<string, string[]>> {
     try {
         return existsSync(cacheFilename) ? JSON.parse(await readFile(cacheFilename, "utf8")) : {};
     } catch (error) {
-        log.error(error);
+        console.log(error);
         return {};
     }
 }
@@ -39,43 +32,43 @@ async function writeCache(mask: string, array: string[]): Promise<void> {
         cache[mask] = array;
         await writeFile(cacheFilename, JSON.stringify(cache));
     } catch (error) {
-        log.error(error);
+        console.log(error);
     }
 }
 
 async function fetchFromAPI(mask: string): Promise<string[]> {
     let url = `https://anagram.poncy.ru/anagram-decoding.cgi?name=words_by_mask_index&inword=${mask}&answer_type=4&required_letters=&exclude_letters=`;
 
-    log.debug(url);
+    console.log(url);
 
     const { data, status, statusText } = await axios.get(url);
 
-    log.debug(`Request status: ${status} ${statusText}`);
+    console.log(`Request status: ${status} ${statusText}`);
 
     // Use optional chaining and nullish coalescing for safety
     return data?.result ?? [];
 }
 
-export async function fetchByMask(mask: string): Promise<string[]> {
+async function fetchByMask(mask: string): Promise<string[]> {
     const cache = await readCache();
     if (cache[mask]) return cache[mask];
 
-    log.info(`Fetching words using mask "${mask}"`);
+    console.log(`Fetching words using mask "${mask}"`);
     const words = await fetchFromAPI(mask);
-    log.info(`Got ${words.length} words`);
+    console.log(`Got ${words.length} words`);
 
     await writeCache(mask, words);
 
     return words;
 }
 
-export async function fetchByChar(char: string, length: number): Promise<string[]> {
+async function fetchByChar(char: string, length: number): Promise<string[]> {
     return await fetchByMask(`${char}${"*".repeat(length - 1)}`);
 }
 
 // A function that solves an encrypted word by matching it with a dictionary
-export async function solve(input: string): Promise<string | false> {
-    log.info(`Trying to solve encrypted word "${input}"`);
+async function solve(input: string): Promise<string | false> {
+    console.log(`Trying to solve encrypted word "${input}"`);
 
     // Check if the input is all digits or not
     const firstRun = /^\d+$/.test(input);
@@ -123,18 +116,18 @@ export async function solve(input: string): Promise<string | false> {
 
     // Check the number of possible words and return accordingly
     if (words.length > 1) {
-        log.error(`Multiple words found: ${words.join(", ")}`);
+        console.log(`Multiple words found: ${words.join(", ")}`);
         return false;
     } else if (words.length < 1) {
-        log.warn("No words found!");
+        console.log("No words found!");
         return false;
     } else {
-        log.info(`Word found: ${words[0]}`);
+        console.log(`Word found: ${words[0]}`);
         return words[0];
     }
 }
 
-export async function bulkSolve(input: string[]) {
+async function bulkSolve(input: string[]) {
     for (let i = 0; i < input.length; i++) {
         const res = await solve(input[i]);
 
@@ -173,7 +166,7 @@ function splitString(str: string): string[] {
     return result.filter((str) => str.length >= 4);
 }
 
-export async function solveRemainingShortWords(input: string[]): Promise<string[]> {
+async function solveRemainingShortWords(input: string[]): Promise<string[]> {
     let output: string[] = [];
 
     for (let i = 0; i < input.length; i++) {
@@ -211,7 +204,7 @@ function flipArray(input: string[]) {
 
 // A function that solves a crossword puzzle by using a solver function
 async function solveCrossword(input: string[]) {
-    log.info("Solving crossword puzzle");
+    console.log("Solving crossword puzzle");
 
     // Copy the input array
     let encryptedWords: string[] = [...input];
@@ -232,4 +225,4 @@ async function solveCrossword(input: string[]) {
 }
 
 // Call the main function
-solveCrossword(input).then((arr) => log.info("Crossword solved! Result:", arr.join(", ")));
+solveCrossword(input).then((arr) => console.log("Crossword solved! Result:", arr.join(", ")));
