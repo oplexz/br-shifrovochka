@@ -309,7 +309,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <table class="my-4" style="float:none; margin:auto;">
             <?php if (count($words) < 1): ?>
                 <h3>Something went wrong! Please try again later.</h3>
-            <?php endif; ?>
+            <?php else: ?>
             <?php foreach ($words as $word): ?>
                 <tr>
                 <?php foreach (mb_str_split($word) as $char): ?>
@@ -323,6 +323,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <?php endforeach; ?>
             </table>
             <a class="btn btn-primary" href="/" role="button">Go back</a>
+            <?php endif; ?>
         <?php else: ?>
             <p class="fs-5 mb-4">Enter your input and get a solved crossword!</p>
             <div class="col-lg-2 mx-auto d-grid gap-3">
