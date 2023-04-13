@@ -307,7 +307,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <h1 class="display-5 fw-bold text-white">Crossword Solver</h1>
         <?php if ($_SERVER["REQUEST_METHOD"] === "POST"): ?>
             <table class="my-4" style="float:none; margin:auto;">
-            <?php if (count($words)): ?>
+            <?php if (count($words) < 1): ?>
                 <h3>Something went wrong! Please try again later.</h3>
             <?php endif; ?>
             <?php foreach ($words as $word): ?>
