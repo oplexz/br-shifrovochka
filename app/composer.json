@@ -2,7 +2,6 @@
     "minimum-stability": "dev",
     "require": {
         "php": "^8.0",
-        "symfony/cache": "^6.1",
         "predis/predis": "^2.0",
         "ext-curl": "*"
     },
