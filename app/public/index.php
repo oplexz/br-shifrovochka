@@ -9,6 +9,9 @@ $client = new Client("tcp://{$_ENV["REDIS_HOST"]}:{$_ENV["REDIS_PORT"]}");
 // $client = RedisAdapter::createConnection("redis://{$_ENV["REDIS_HOST"]}:{$_ENV["REDIS_PORT"]}");
 // $cache = new RedisAdapter($client);
 
+$defaultDictionary = ["А", "В", "Г", "Е", "И", "К", "Л", "Н", "О", "П", "Р", "С", "Т", "У", "Щ", "Ь", "Я", ""];
+$defaultWords = ["1153241526", "1656335361", "5424251322", "3655516563", "4213633456"];
+
 function fetchByMask(string $mask)
 {
     global $client;
@@ -318,70 +321,36 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <p class="fs-5 mb-4">Enter your input and get a solved crossword!</p>
             <div class="col-lg-2 mx-auto d-grid gap-3">
                 <div class="row g-1">
-                    <div class="input-group">
-                        <span class="input-group-text">1</span>
-                        <input type="text" name="dict1" class="form-control" value="А" />
-                        <input type="text" name="dict2" class="form-control" value="В" />
-                        <input type="text" name="dict3" class="form-control" value="Г" />
-                    </div>
-                    
-                    <div class="input-group">
-                        <span class="input-group-text">2</span>
-                        <input type="text" name="dict4" class="form-control" value="Е" />
-                        <input type="text" name="dict5" class="form-control" value="И" />
-                        <input type="text" name="dict6" class="form-control" value="К" />
-                    </div>
-                    
-                    <div class="input-group">
-                        <span class="input-group-text">3</span>
-                        <input type="text" name="dict7" class="form-control" value="Л" />
-                        <input type="text" name="dict8" class="form-control" value="Н" />
-                        <input type="text" name="dict9" class="form-control" value="О" />
-                    </div>
-                    
-                    <div class="input-group">
-                        <span class="input-group-text">4</span>
-                        <input type="text" name="dict10" class="form-control" value="П" />
-                        <input type="text" name="dict11" class="form-control" value="Р" />
-                        <input type="text" name="dict12" class="form-control" value="С" />
-                    </div>
-                    
-                    <div class="input-group">
-                        <span class="input-group-text">5</span>
-                        <input type="text" name="dict13" class="form-control" value="Т" />
-                        <input type="text" name="dict14" class="form-control" value="У" />
-                        <input type="text" name="dict15" class="form-control" value="Щ" />
-                    </div>
-                    
-                    <div class="input-group">
-                        <span class="input-group-text">6</span>
-                        <input type="text" name="dict16" class="form-control" value="Ь" />
-                        <input type="text" name="dict17" class="form-control" value="Я" />
-                        <input type="text" name="dict18" class="form-control" value="" />
-                    </div>
+                <?php for ($i = 1; $i <= 18; $i++) {
+                    if (($i - 1) % 3 == 0) {
+                        echo '<div class="input-group">';
+                        echo '<span class="input-group-text">' . floor(($i - 1) / 3 + 1) . "</span>";
+                    }
+
+                    echo '<input type="text" name="dict' .
+                        $i .
+                        '" class="form-control" value="' .
+                        $defaultDictionary[$i - 1] .
+                        '" />';
+
+                    if (($i - 1) % 3 == 2) {
+                        echo "</div>";
+                    }
+                } ?>
                 </div>
 
                 <div class="row g-1">
-                    <div class="input-group">
-                        <span class="input-group-text">Word 1</span>
-                        <input type="text" name="word1" class="form-control" value="1153241526" minlength="10"/>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-text">Word 2</span>
-                        <input type="text" name="word2" class="form-control" value="1656335361" minlength="10"/>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-text">Word 3</span>
-                        <input type="text" name="word3" class="form-control" value="5424251322" minlength="10"/>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-text">Word 4</span>
-                        <input type="text" name="word4" class="form-control" value="3655516563" minlength="10"/>
-                    </div>
-                    <div class="input-group">
-                        <span class="input-group-text">Word 5</span>
-                        <input type="text" name="word5" class="form-control" value="4213633456" minlength="10"/>
-                    </div>
+                    <?php for ($i = 1; $i <= 5; $i++) {
+                        echo '<div class="input-group">';
+                        echo '<span class="input-group-text">Word ' . $i . "</span>";
+                        echo '<input type="text" name="word' .
+                            $i .
+                            '" class="form-control" value="' .
+                            $defaultWords[$i - 1] .
+                            '" minlength="10"/>';
+
+                        echo "</div>";
+                    } ?>
                 </div>
 
                 <form method="post" autocomplete="off" onsubmit="generatePOSTFields()">
